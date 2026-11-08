@@ -1,0 +1,196 @@
+// firmir-tasks UI: the whole window is declared in Firml and compiled to
+// C++ by firmlc at build time. The application logic lives in TaskApp
+// (TaskApp.cpp): pages switch through its "page" property, the task rows
+// come from taskModel (refilled by TaskApp), the notes text round-trips
+// through setNotes()/the "text" property.
+#include <firmir/items/Window.hpp>
+#include <firmir/items/Rectangle.hpp>
+#include <firmir/items/Text.hpp>
+#include <firmir/items/Button.hpp>
+#include <firmir/items/Item.hpp>
+#include <firmir/items/Column.hpp>
+#include <firmir/items/Repeater.hpp>
+#include <firmir/items/ListModel.hpp>
+#include <firmir/items/EditableText.hpp>
+#include <firmir/gui-controls/CheckBox.hpp>
+#include <firmir/gui-controls/ScrollView.hpp>
+#include "TaskApp.hpp"
+
+Firmir.Gui.Window {
+    id: root
+    title: "firmir-tasks"
+    width: 640
+    height: 480
+
+    TaskApp {
+        id: taskapp
+    }
+
+    ListModel {
+        id: taskModel
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#22242A"
+    }
+
+    // Header with the tab buttons and the window controls.
+    Rectangle {
+        id: header
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+        }
+        height: 44
+        color: "#17181C"
+
+        Button {
+            x: 8
+            y: 6
+            width: 90
+            height: 32
+            text: "Tasks"
+            onClicked: taskapp.showPage(0)
+        }
+        Button {
+            x: 102
+            y: 6
+            width: 90
+            height: 32
+            text: "Notes"
+            onClicked: taskapp.showPage(1)
+        }
+        Button {
+            id: closeButton
+            width: 32
+            height: 32
+            text: "X"
+            anchors {
+                right: parent.right
+                top: parent.top
+                rightMargin: 6
+                topMargin: 6
+            }
+            onClicked: App.close()
+        }
+        Button {
+            id: maxButton
+            width: 32
+            height: 32
+            text: "[]"
+            anchors {
+                right: closeButton.left
+                top: parent.top
+                rightMargin: 4
+                topMargin: 6
+            }
+            onClicked: App.toggleMaximized()
+        }
+        Button {
+            width: 32
+            height: 32
+            text: "_"
+            anchors {
+                right: maxButton.left
+                top: parent.top
+                rightMargin: 4
+                topMargin: 6
+            }
+            onClicked: App.showMinimized()
+        }
+    }
+
+    // ------------------------------ tasks page ------------------------------
+    Item {
+        id: tasksPage
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: header.bottom
+            bottom: parent.bottom
+        }
+        visible: taskapp.page == 0
+
+        EditableText {
+            id: input
+            x: 8
+            y: 8
+            width: 500
+            height: 34
+            onAccepted: taskapp.addTask(input.text)
+        }
+        Button {
+            x: 516
+            y: 8
+            width: 116
+            height: 34
+            text: "add task"
+            onClicked: taskapp.addTask(input.text)
+        }
+
+        ScrollView {
+            x: 8
+            y: 50
+            width: 624
+            height: 420
+            contentWidth: 610
+            contentHeight: taskModel.count * 30 + 8
+
+            Column {
+                Repeater {
+                    model: taskModel
+                    Item {
+                        width: 610
+                        height: 30
+                        CheckBox {
+                            x: 4
+                            y: 2
+                            width: 34
+                            height: 24
+                            checked: model.done
+                            onCheckedChanged: taskapp.setTaskDone(index, checked)
+                        }
+                        Text {
+                            x: 40
+                            y: 4
+                            text: model.label
+                            color: model.done ? "#707070" : "#E8E8E8"
+                        }
+                        Button {
+                            x: 560
+                            y: 2
+                            width: 28
+                            height: 24
+                            text: "x"
+                            onClicked: taskapp.removeTask(index)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------ notes page ------------------------------
+    Item {
+        id: notesPage
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: header.bottom
+            bottom: parent.bottom
+        }
+        visible: taskapp.page == 1
+
+        EditableText {
+            id: notesEdit
+            x: 8
+            y: 8
+            width: 624
+            height: 420
+            multiline: true
+            onTextChanged: taskapp.setNotes(notesEdit.text)
+        }
+    }
+}
